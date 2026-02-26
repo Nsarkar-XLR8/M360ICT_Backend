@@ -8,7 +8,16 @@ const envSchema = z.object({
     PORT: z.coerce.number().default(3000),
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 
-    MONGODB_URL: z.string().min(1),
+
+    DB_HOST: z.string().min(1),
+    DB_PORT: z.coerce.number().default(3306),
+    DB_USER: z.string().min(1),
+    DB_PASSWORD: z.string().min(1),
+    DB_NAME: z.string().min(1),
+
+    // MONGODB_URL: z.string().min(1),
+
+    uploadPath: z.string().optional(),
 
     BCRYPT_SALT_ROUNDS: z.coerce.number().default(10),
 
@@ -48,9 +57,19 @@ const config = {
     port: env.PORT,
     nodeEnv: env.NODE_ENV,
 
-    mongodbUrl: env.MONGODB_URL,
+     db: {
+        host: env.DB_HOST,
+        port: env.DB_PORT,
+        user: env.DB_USER,
+        password: env.DB_PASSWORD,
+        name: env.DB_NAME,
+    },
+
+    // mongodbUrl: env.MONGODB_URL,
 
     bcryptSaltRounds: env.BCRYPT_SALT_ROUNDS,
+
+    uploadPath: env.uploadPath,
 
     jwt: {
         secret: env.JWT_SECRET,
@@ -99,7 +118,7 @@ const config = {
     logger: {
         level: env.NODE_ENV === "production" ? "info" : "debug"
     },
-     swagger_enabled: true,
+    swagger_enabled: true,
 };
 
 export default config;
