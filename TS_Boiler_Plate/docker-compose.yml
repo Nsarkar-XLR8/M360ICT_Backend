@@ -1,28 +1,84 @@
-version: '3.8'
+version: "3.9"
 
 services:
-  api:
-    build: .
+  # ──────────────────────────────────────────────
+  # MySQL 8 database
+  # ──────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: hr_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${DB_NAME:-hr_management}
+      MYSQL_USER: ${DB_USER:-hr_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-hr_password}
     ports:
-      - "5000:5000"
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # Seed schema on first boot
+      - ./src/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-rootpassword}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ──────────────────────────────────────────────
+  # API – local development (hot-reload via tsx)
+  # ──────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      target: deps # only install deps stage for dev (source mounted from host)
+    container_name: hr_api
+    restart: unless-stopped
+    working_dir: /app
+    command: npm run start:dev
+    env_file:
+      - .env
     environment:
       - NODE_ENV=development
-      - PORT=5000
-      - MONGODB_URL=mongodb://mongo:27017/ts_boilerplate
-      - JWT_SECRET=dev_secret
-    depends_on:
-      - mongo
+      - DB_HOST=db
+    ports:
+      - "${PORT:-5001}:${PORT:-5001}"
     volumes:
       - .:/app
-      - /app/node_modules
-    command: npm run dev
+      - /app/node_modules # anonymous volume prevents host node_modules override
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:${PORT:-5001}/api/v1/health || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
 
-  mongo:
-    image: mongo:6
+  # ──────────────────────────────────────────────
+  # API (production build)
+  # Run with: docker compose --profile prod up api-prod
+  # ──────────────────────────────────────────────
+  api-prod:
+    profiles: [ prod ]
+    build:
+      context: .
+      target: runner
+    container_name: hr_api_prod
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=db
     ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
+      - "${PORT:-5001}:${PORT:-5001}"
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
-  mongo_data:
+  mysql_data:
+    name: hr_mysql_data

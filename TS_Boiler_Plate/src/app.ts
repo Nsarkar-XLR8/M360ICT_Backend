@@ -5,7 +5,6 @@ import helmet from "helmet";
 import hpp from "hpp";
 import timeout from "connect-timeout";
 import swaggerUi from "swagger-ui-express";
-import { mongoSanitize } from "./middlewares/mongoSanitize.js";
 import router from "./routes/index.js";
 import { openapiSpec } from "./config/swagger.js";
 import { notFound } from "./middlewares/notFound.js";
@@ -61,7 +60,7 @@ export function createApp() {
     app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
     // 7. DATA SANITIZATION
-    app.use(mongoSanitize);
+    // (MySQL/Knex handles SQL injection, no NoSQL sanitization needed)
 
     // 8. TELEMETRY & PUBLIC ROUTES
     app.get("/metrics", metricsHandler);

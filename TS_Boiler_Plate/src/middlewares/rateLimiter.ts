@@ -67,24 +67,6 @@ const sensitiveActionLimiter = rateLimit({
  * - Prevents one malicious user from affecting an entire corporate network IP.
  * - MUST be placed AFTER Auth() middleware in the route.
  */
-const authenticatedUserLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 500, // high limit for logged-in users
-    standardHeaders: true,
-    legacyHeaders: false,
-    validate: { default: false }, // Disable internal IP validation for custom key generator
-    keyGenerator: (req) => {
-        // Fallback to IP if userId isn't available (e.g. middleware misplacement)
-        return req.user?.userId || req.ip || "unknown";
-    },
-    handler: (_req, _res, next) => {
-        next(
-            AppError.of(StatusCodes.TOO_MANY_REQUESTS, "Account limit reached", [
-                { path: "rateLimit", message: "Too many requests for this account. Slow down." }
-            ])
-        );
-    }
-});
 
 /**
  * Resource-Specific Limiting (Expensive Tasks)
@@ -126,7 +108,7 @@ export const rateLimiter = {
     apiRateLimiter,
     authRateLimiter,
     sensitiveActionLimiter,
-    authenticatedUserLimiter,
+    // authenticatedUserLimiter,
     heavyTaskLimiter,
     externalApiLimiter
 };
