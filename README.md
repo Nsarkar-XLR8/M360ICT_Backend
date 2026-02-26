@@ -147,6 +147,8 @@ docker compose down -v
 Migration files are located in `src/database/migrations/`.  
 A plain SQL schema file is also available at `src/database/schema.sql` for manual initialization.
 
+A visual **Entity Relationship Diagram (ERD)** mapping the database connections is available here: [ERD.md](./ERD.md)
+
 ---
 
 ## 🧪 Testing Commands
